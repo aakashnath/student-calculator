@@ -42,7 +42,6 @@ student-calculator/
 ├── index.html
 ├── style.css
 ├── script.js
-├── calculator-preview.png
 ├── LICENSE
 └── README.md
 
@@ -159,9 +158,10 @@ No installation or external dependencies are required.
 
 ## 📥 Clone Repository
 
-```bash
-git clone https://github.com/aakashnath/student-calculator.git
-cd student-calculator
+Run these commands in your terminal:
+
+    git clone https://github.com/aakashnath/student-calculator.git
+    cd student-calculator
 
 Open `index.html` in your browser.
 
@@ -206,7 +206,7 @@ This project is licensed under the MIT License.
 B.Tech in Information Technology  
 Government College of Engineering and Leather Technology, Kolkata
 
-GitHub: https://github.com/aakashnath
+GitHub: [github.com/aakashnath](https://github.com/aakashnath)
 
 ## ⭐ Support
 
