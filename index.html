@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Calculator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="page">
+
+    <!-- ===== Header ===== -->
+    <header class="app-header">
+      <h1>Student Calculator</h1>
+      <p class="tagline">Simple &bull; Fast &bull; Responsive</p>
+    </header>
+
+    <!-- ===== Main layout: calculator + history ===== -->
+    <main class="app-layout">
+
+      <!-- ===== Calculator ===== -->
+      <section class="calculator" aria-label="Calculator">
+
+        <!-- Display area -->
+        <div class="display" id="display">
+          <div class="expression" id="expression" aria-live="off"></div>
+          <div class="current-value" id="currentValue" aria-live="polite">0</div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="buttons">
+
+          <button class="btn btn-clear" data-action="clear" aria-label="All Clear">AC</button>
+          <button class="btn btn-light" data-action="backspace" aria-label="Backspace">⌫</button>
+          <button class="btn btn-operator" data-action="percent" aria-label="Percent">%</button>
+          <button class="btn btn-operator" data-action="divide" aria-label="Divide">÷</button>
+
+          <button class="btn btn-number" data-number="7" aria-label="Seven">7</button>
+          <button class="btn btn-number" data-number="8" aria-label="Eight">8</button>
+          <button class="btn btn-number" data-number="9" aria-label="Nine">9</button>
+          <button class="btn btn-operator" data-action="multiply" aria-label="Multiply">×</button>
+
+          <button class="btn btn-number" data-number="4" aria-label="Four">4</button>
+          <button class="btn btn-number" data-number="5" aria-label="Five">5</button>
+          <button class="btn btn-number" data-number="6" aria-label="Six">6</button>
+          <button class="btn btn-operator" data-action="subtract" aria-label="Subtract">−</button>
+
+          <button class="btn btn-number" data-number="1" aria-label="One">1</button>
+          <button class="btn btn-number" data-number="2" aria-label="Two">2</button>
+          <button class="btn btn-number" data-number="3" aria-label="Three">3</button>
+          <button class="btn btn-operator" data-action="add" aria-label="Add">+</button>
+
+          <button class="btn btn-number btn-zero" data-number="0" aria-label="Zero">0</button>
+          <button class="btn btn-number" data-action="decimal" aria-label="Decimal point">.</button>
+          <button class="btn btn-equals" data-action="equals" aria-label="Equals">=</button>
+
+        </div>
+      </section>
+
+      <!-- ===== History ===== -->
+      <section class="history-panel" aria-label="Calculation history">
+        <div class="history-header">
+          <h2>History</h2>
+          <button class="clear-history-btn" id="clearHistoryBtn" aria-label="Clear history">Clear</button>
+        </div>
+        <ul class="history-list" id="historyList">
+          <li class="history-empty" id="historyEmptyMsg">No calculations yet</li>
+        </ul>
+      </section>
+
+    </main>
+
+    <footer class="app-footer">
+      <p>Built with HTML, CSS &amp; Vanilla JavaScript</p>
+    </footer>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
