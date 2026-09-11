@@ -1,9 +1,11 @@
 /* =========================================================
-   STUDENT CALCULATOR — SCRIPT
-   Plain vanilla JavaScript. No frameworks, no eval().
+   STUDENT CALCULATOR
+   BODMAS / MULTI-OPERATION ENGINE
+   Vanilla JavaScript — No eval()
    ========================================================= */
 
-/* ---------- 1. Grab the elements we need from the page ---------- */
+/* ---------- DOM Elements ---------- */
+
 const expressionEl = document.getElementById("expression");
 const currentValueEl = document.getElementById("currentValue");
 const historyListEl = document.getElementById("historyList");
@@ -11,316 +13,812 @@ const historyEmptyMsg = document.getElementById("historyEmptyMsg");
 const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 const allButtons = document.querySelectorAll(".btn");
 
-/* ---------- 2. Calculator state ----------
-   We keep track of everything the calculator "remembers"
-   in a few simple variables instead of one big object.
-   This makes it easy to explain step by step in an interview.
-*/
-let currentInput = "0";      // what the user is currently typing
-let firstOperand = null;     // the number entered before the operator
-let selectedOperator = null; // "+", "-", "*", "/", or "%"
-let isResultShown = false;   // true right after pressing "="
-let historyItems = [];       // stores past calculations as text
 
-/* ---------- 3. Update what the user sees ---------- */
+/* ---------- Calculator State ---------- */
+
+let expression = "";
+let isResultShown = false;
+let historyItems = [];
+
+
+/* =========================================================
+   1. DISPLAY
+   ========================================================= */
+
 function updateDisplay() {
-  currentValueEl.textContent = currentInput;
 
-  if (selectedOperator && firstOperand !== null) {
-    expressionEl.textContent = `${firstOperand} ${operatorSymbol(selectedOperator)}`;
-  } else {
-    expressionEl.textContent = "";
-  }
+    if (expression === "") {
+        expressionEl.textContent = "";
+        currentValueEl.textContent = "0";
+        return;
+    }
+
+    expressionEl.textContent = expression;
+
+    /*
+       Show the last number/operator area in the main display.
+       If expression ends with an operator, show 0.
+    */
+
+    const match = expression.match(/(\d*\.?\d+)%?$/);
+
+    if (match) {
+        currentValueEl.textContent = match[0];
+    } else {
+        currentValueEl.textContent = "0";
+    }
 }
 
-// Converts the internal operator code into the symbol shown on screen
-function operatorSymbol(op) {
-  switch (op) {
-    case "+": return "+";
-    case "-": return "−";
-    case "*": return "×";
-    case "/": return "÷";
-    default: return "";
-  }
-}
 
-/* ---------- 4. Handle number button clicks ---------- */
+/* =========================================================
+   2. NUMBER INPUT
+   ========================================================= */
+
 function inputNumber(digit) {
-  // If a result was just shown, typing a new digit should start fresh
-  if (isResultShown) {
-    currentInput = "0";
-    isResultShown = false;
-  }
 
-  if (currentInput === "0") {
-    currentInput = digit; // replace the leading zero
-  } else {
-    currentInput += digit;
-  }
+    if (isResultShown) {
+        expression = "";
+        isResultShown = false;
+    }
 
-  updateDisplay();
-}
+    /*
+       Prevent unnecessary leading zeros.
+    */
 
-/* ---------- 5. Handle the decimal point ---------- */
-function inputDecimal() {
-  if (isResultShown) {
-    currentInput = "0";
-    isResultShown = false;
-  }
+    if (expression === "0") {
+        expression = digit;
+    } else {
+        expression += digit;
+    }
 
-  // Only add a decimal point if one doesn't already exist
-  if (!currentInput.includes(".")) {
-    currentInput += ".";
-  }
-
-  updateDisplay();
-}
-
-/* ---------- 6. Handle operator buttons (+ − × ÷) ---------- */
-function chooseOperator(operator) {
-  // If the user already picked an operator and typed a second number,
-  // calculate the result first (this allows chained calculations,
-  // e.g. 5 + 3 + 2 =)
-  if (selectedOperator !== null && firstOperand !== null && !isResultShown) {
-    calculateResult();
-  }
-
-  firstOperand = parseFloat(currentInput);
-  selectedOperator = operator;
-  isResultShown = false;
-  currentInput = "0";
-
-  updateDisplay();
-}
-
-/* ---------- 7. The safe calculation logic (no eval!) ---------- */
-function performCalculation(a, b, operator) {
-  switch (operator) {
-    case "+":
-      return a + b;
-    case "-":
-      return a - b;
-    case "*":
-      return a * b;
-    case "/":
-      if (b === 0) {
-        // Division by zero is not allowed — throw a clear error instead
-        throw new Error("Cannot divide by zero");
-      }
-      return a / b;
-    default:
-      throw new Error("Invalid operator");
-  }
-}
-
-/* ---------- 8. Handle the "=" button ---------- */
-function calculateResult() {
-  // If there is nothing to calculate, do nothing
-  if (selectedOperator === null || firstOperand === null) {
-    return;
-  }
-
-  const secondOperand = parseFloat(currentInput);
-
-  try {
-    const result = performCalculation(firstOperand, secondOperand, selectedOperator);
-    const roundedResult = roundResult(result);
-
-    // Build a readable line for the history panel
-    const historyLine = `${firstOperand} ${operatorSymbol(selectedOperator)} ${secondOperand} = ${roundedResult}`;
-    addToHistory(historyLine);
-
-    currentInput = String(roundedResult);
-    firstOperand = null;
-    selectedOperator = null;
-    isResultShown = true;
-  } catch (error) {
-    // Handles division by zero and any other calculation error
-    currentInput = "Error";
-    firstOperand = null;
-    selectedOperator = null;
-    isResultShown = true;
-  }
-
-  updateDisplay();
-}
-
-// Avoids ugly floating point results like 0.1 + 0.2 = 0.30000000000000004
-function roundResult(number) {
-  return Math.round((number + Number.EPSILON) * 1e10) / 1e10;
-}
-
-/* ---------- 9. Percentage button ---------- */
-function applyPercent() {
-  const value = parseFloat(currentInput);
-
-  if (isNaN(value)) {
-    currentInput = "Error";
     updateDisplay();
-    return;
-  }
-
-  // If we are in the middle of an operation (e.g. 200 + 10%),
-  // treat the percentage as a share of the first operand.
-  if (selectedOperator !== null && firstOperand !== null) {
-    currentInput = String(roundResult((firstOperand * value) / 100));
-  } else {
-    currentInput = String(roundResult(value / 100));
-  }
-
-  updateDisplay();
 }
 
-/* ---------- 10. Clear (C) button ---------- */
+
+/* =========================================================
+   3. DECIMAL INPUT
+   ========================================================= */
+
+function inputDecimal() {
+
+    if (isResultShown) {
+        expression = "";
+        isResultShown = false;
+    }
+
+    /*
+       Find the current number after the last operator.
+    */
+
+    const lastNumber = expression.split(/[+\-×÷*/]/).pop();
+
+    /*
+       Don't allow two decimal points
+       inside the same number.
+    */
+
+    if (lastNumber.includes(".")) {
+        return;
+    }
+
+    /*
+       If decimal is pressed at the beginning
+       or after an operator, create 0.
+    */
+
+    if (
+        expression === "" ||
+        /[+\-×÷*/]$/.test(expression)
+    ) {
+        expression += "0.";
+    } else {
+        expression += ".";
+    }
+
+    updateDisplay();
+}
+
+
+/* =========================================================
+   4. OPERATOR INPUT
+   ========================================================= */
+
+function inputOperator(operator) {
+
+    if (expression === "") {
+        return;
+    }
+
+    /*
+       If result is already displayed,
+       continue calculation from that result.
+    */
+
+    if (isResultShown) {
+        isResultShown = false;
+    }
+
+    /*
+       Don't allow two operators together.
+       Example:
+       20 + ×
+       
+       becomes:
+       20 ×
+    */
+
+    if (/[+\-×÷*/]$/.test(expression)) {
+
+        expression = expression.slice(0, -1);
+    }
+
+    expression += operator;
+
+    updateDisplay();
+}
+
+
+/* =========================================================
+   5. PERCENTAGE
+   ========================================================= */
+
+function applyPercent() {
+
+    if (expression === "") {
+        return;
+    }
+
+    /*
+       Find the last number.
+    */
+
+    const match = expression.match(/(\d*\.?\d+)$/);
+
+    if (!match) {
+        return;
+    }
+
+    const number = parseFloat(match[1]);
+
+    const percentage = roundResult(number / 100);
+
+    expression =
+        expression.slice(0, -match[1].length) +
+        percentage;
+
+    isResultShown = false;
+
+    updateDisplay();
+}
+
+
+/* =========================================================
+   6. BODMAS CALCULATION ENGINE
+   ========================================================= */
+
+/*
+   This calculator does NOT use eval().
+
+   Order of calculation:
+
+   1. Multiplication ×
+   2. Division ÷
+   3. Addition +
+   4. Subtraction −
+
+   This gives normal BODMAS-style precedence.
+*/
+
+
+function calculateExpression(input) {
+
+    /*
+       Remove spaces.
+    */
+
+    input = input.replace(/\s+/g, "");
+
+    /*
+       Convert display operators to internal operators.
+    */
+
+    input = input
+        .replace(/×/g, "*")
+        .replace(/÷/g, "/")
+        .replace(/−/g, "-");
+
+
+    /*
+       Validate expression.
+    */
+
+    if (!/^[0-9+\-*/.%]+$/.test(input)) {
+        throw new Error("Invalid expression");
+    }
+
+
+    /*
+       Tokenize numbers and operators.
+    */
+
+    const tokens = [];
+
+    let number = "";
+
+    for (let i = 0; i < input.length; i++) {
+
+        const char = input[i];
+
+        /*
+           Number / decimal
+        */
+
+        if (
+            (char >= "0" && char <= "9") ||
+            char === "."
+        ) {
+
+            number += char;
+
+        } else {
+
+            /*
+               Save current number.
+            */
+
+            if (number !== "") {
+
+                const parsedNumber = parseFloat(number);
+
+                if (Number.isNaN(parsedNumber)) {
+                    throw new Error("Invalid number");
+                }
+
+                tokens.push(parsedNumber);
+
+                number = "";
+            }
+
+            /*
+               Save operator.
+            */
+
+            tokens.push(char);
+        }
+    }
+
+
+    /*
+       Save final number.
+    */
+
+    if (number !== "") {
+
+        const parsedNumber = parseFloat(number);
+
+        if (Number.isNaN(parsedNumber)) {
+            throw new Error("Invalid number");
+        }
+
+        tokens.push(parsedNumber);
+    }
+
+
+    /*
+       Basic validation.
+    */
+
+    if (tokens.length === 0) {
+        throw new Error("Empty expression");
+    }
+
+    if (typeof tokens[0] !== "number") {
+        throw new Error("Invalid expression");
+    }
+
+    if (
+        typeof tokens[tokens.length - 1] !== "number"
+    ) {
+        throw new Error("Incomplete expression");
+    }
+
+
+    /* =====================================================
+       STEP 1 — MULTIPLICATION & DIVISION
+       ===================================================== */
+
+    const firstPass = [];
+
+    let currentNumber = tokens[0];
+
+    for (let i = 1; i < tokens.length; i += 2) {
+
+        const operator = tokens[i];
+        const nextNumber = tokens[i + 1];
+
+        if (operator === "*") {
+
+            currentNumber *= nextNumber;
+
+        } else if (operator === "/") {
+
+            if (nextNumber === 0) {
+                throw new Error("Cannot divide by zero");
+            }
+
+            currentNumber /= nextNumber;
+
+        } else {
+
+            /*
+               + or -
+               Save previous result and operator.
+            */
+
+            firstPass.push(currentNumber);
+            firstPass.push(operator);
+
+            currentNumber = nextNumber;
+        }
+    }
+
+    /*
+       Save final number.
+    */
+
+    firstPass.push(currentNumber);
+
+
+    /* =====================================================
+       STEP 2 — ADDITION & SUBTRACTION
+       ===================================================== */
+
+    let result = firstPass[0];
+
+    for (let i = 1; i < firstPass.length; i += 2) {
+
+        const operator = firstPass[i];
+        const nextNumber = firstPass[i + 1];
+
+        if (operator === "+") {
+
+            result += nextNumber;
+
+        } else if (operator === "-") {
+
+            result -= nextNumber;
+        }
+    }
+
+
+    return roundResult(result);
+}
+
+
+/* =========================================================
+   7. EQUALS
+   ========================================================= */
+
+function calculateResult() {
+
+    if (expression === "") {
+        return;
+    }
+
+    /*
+       Don't calculate if expression ends with operator.
+    */
+
+    if (/[+\-×÷*/]$/.test(expression)) {
+        return;
+    }
+
+    try {
+
+        const originalExpression = expression;
+
+        const result = calculateExpression(expression);
+
+        /*
+           Add calculation to history.
+        */
+
+        const historyLine =
+            `${formatExpression(originalExpression)} = ${formatNumber(result)}`;
+
+        addToHistory(historyLine);
+
+
+        /*
+           Show result.
+        */
+
+        expression = String(result);
+
+        isResultShown = true;
+
+        expressionEl.textContent =
+            formatExpression(originalExpression);
+
+        currentValueEl.textContent =
+            formatNumber(result);
+
+    } catch (error) {
+
+        expressionEl.textContent = expression;
+        currentValueEl.textContent = "Error";
+
+        isResultShown = true;
+    }
+}
+
+
+/* =========================================================
+   8. ROUNDING
+   ========================================================= */
+
+function roundResult(number) {
+
+    return Math.round(
+        (number + Number.EPSILON) * 1e10
+    ) / 1e10;
+}
+
+
+/* =========================================================
+   9. FORMAT EXPRESSION
+   ========================================================= */
+
+function formatExpression(value) {
+
+    return value
+        .replace(/\*/g, "×")
+        .replace(/\//g, "÷")
+        .replace(/-/g, "−");
+}
+
+
+/* =========================================================
+   10. FORMAT NUMBER
+   ========================================================= */
+
+function formatNumber(number) {
+
+    if (!Number.isFinite(number)) {
+        return "Error";
+    }
+
+    return String(roundResult(number));
+}
+
+
+/* =========================================================
+   11. CLEAR
+   ========================================================= */
+
 function clearAll() {
-  currentInput = "0";
-  firstOperand = null;
-  selectedOperator = null;
-  isResultShown = false;
-  updateDisplay();
+
+    expression = "";
+    isResultShown = false;
+
+    updateDisplay();
 }
 
-/* ---------- 11. Backspace button ---------- */
+
+/* =========================================================
+   12. BACKSPACE
+   ========================================================= */
+
 function backspace() {
-  if (isResultShown) {
-    // Don't backspace into a finished result — clear instead
-    clearAll();
-    return;
-  }
 
-  if (currentInput.length <= 1 || currentInput === "Error") {
-    currentInput = "0";
-  } else {
-    currentInput = currentInput.slice(0, -1);
-  }
+    if (isResultShown) {
 
-  updateDisplay();
+        clearAll();
+
+        return;
+    }
+
+    if (expression.length > 0) {
+
+        expression =
+            expression.slice(0, -1);
+    }
+
+    updateDisplay();
 }
 
-/* ---------- 12. History panel ---------- */
+
+/* =========================================================
+   13. HISTORY
+   ========================================================= */
+
 function addToHistory(line) {
-  historyItems.unshift(line); // newest calculation on top
-  renderHistory();
+
+    historyItems.unshift(line);
+
+    /*
+       Keep only latest 20 calculations.
+    */
+
+    if (historyItems.length > 20) {
+
+        historyItems.pop();
+    }
+
+    renderHistory();
 }
+
 
 function renderHistory() {
-  historyListEl.innerHTML = "";
 
-  if (historyItems.length === 0) {
-    historyListEl.appendChild(historyEmptyMsg);
-    return;
-  }
+    historyListEl.innerHTML = "";
 
-  historyItems.forEach((line) => {
-    const li = document.createElement("li");
-    li.textContent = line;
-    historyListEl.appendChild(li);
-  });
+    if (historyItems.length === 0) {
+
+        historyListEl.appendChild(historyEmptyMsg);
+
+        return;
+    }
+
+    historyItems.forEach((line) => {
+
+        const li =
+            document.createElement("li");
+
+        li.textContent = line;
+
+        historyListEl.appendChild(li);
+    });
 }
+
 
 function clearHistory() {
-  historyItems = [];
-  renderHistory();
+
+    historyItems = [];
+
+    renderHistory();
 }
 
-/* ---------- 13. Wire up button clicks ---------- */
+
+/* =========================================================
+   14. BUTTON CLICK EVENTS
+   ========================================================= */
+
 allButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    handleButtonPress(button);
-    flashButton(button);
-  });
+
+    button.addEventListener("click", () => {
+
+        handleButtonPress(button);
+
+        flashButton(button);
+    });
 });
 
-clearHistoryBtn.addEventListener("click", clearHistory);
 
-// A short visual "pressed" animation for click feedback
+clearHistoryBtn.addEventListener(
+    "click",
+    clearHistory
+);
+
+
+/* =========================================================
+   15. BUTTON PRESS ANIMATION
+   ========================================================= */
+
 function flashButton(button) {
-  button.classList.add("pressed");
-  setTimeout(() => button.classList.remove("pressed"), 100);
+
+    button.classList.add("pressed");
+
+    setTimeout(() => {
+
+        button.classList.remove("pressed");
+
+    }, 100);
 }
 
-// Reads the button's data attributes and calls the right function
+
+/* =========================================================
+   16. BUTTON HANDLER
+   ========================================================= */
+
 function handleButtonPress(button) {
-  const digit = button.dataset.number;
-  const action = button.dataset.action;
 
-  if (digit !== undefined) {
-    inputNumber(digit);
-    return;
-  }
+    const digit =
+        button.dataset.number;
 
-  switch (action) {
-    case "clear":
-      clearAll();
-      break;
-    case "backspace":
-      backspace();
-      break;
-    case "decimal":
-      inputDecimal();
-      break;
-    case "percent":
-      applyPercent();
-      break;
-    case "add":
-      chooseOperator("+");
-      break;
-    case "subtract":
-      chooseOperator("-");
-      break;
-    case "multiply":
-      chooseOperator("*");
-      break;
-    case "divide":
-      chooseOperator("/");
-      break;
-    case "equals":
-      calculateResult();
-      break;
-  }
+    const action =
+        button.dataset.action;
+
+
+    /*
+       Number button
+    */
+
+    if (digit !== undefined) {
+
+        inputNumber(digit);
+
+        return;
+    }
+
+
+    /*
+       Action buttons
+    */
+
+    switch (action) {
+
+        case "clear":
+
+            clearAll();
+
+            break;
+
+
+        case "backspace":
+
+            backspace();
+
+            break;
+
+
+        case "decimal":
+
+            inputDecimal();
+
+            break;
+
+
+        case "percent":
+
+            applyPercent();
+
+            break;
+
+
+        case "add":
+
+            inputOperator("+");
+
+            break;
+
+
+        case "subtract":
+
+            inputOperator("-");
+
+            break;
+
+
+        case "multiply":
+
+            inputOperator("×");
+
+            break;
+
+
+        case "divide":
+
+            inputOperator("÷");
+
+            break;
+
+
+        case "equals":
+
+            calculateResult();
+
+            break;
+    }
 }
 
-/* ---------- 14. Keyboard support ---------- */
-document.addEventListener("keydown", (event) => {
-  const key = event.key;
 
-  if (key >= "0" && key <= "9") {
-    inputNumber(key);
-    return;
-  }
+/* =========================================================
+   17. KEYBOARD SUPPORT
+   ========================================================= */
 
-  switch (key) {
-    case ".":
-      inputDecimal();
-      break;
-    case "+":
-      chooseOperator("+");
-      break;
-    case "-":
-      chooseOperator("-");
-      break;
-    case "*":
-      chooseOperator("*");
-      break;
-    case "/":
-      event.preventDefault(); // stops the browser's quick-find from opening
-      chooseOperator("/");
-      break;
-    case "%":
-      applyPercent();
-      break;
-    case "Enter":
-    case "=":
-      calculateResult();
-      break;
-    case "Backspace":
-      backspace();
-      break;
-    case "Escape":
-      clearAll();
-      break;
-  }
-});
+document.addEventListener(
+    "keydown",
+    (event) => {
 
-/* ---------- 15. First render when the page loads ---------- */
+        const key = event.key;
+
+
+        /*
+           Numbers
+        */
+
+        if (key >= "0" && key <= "9") {
+
+            inputNumber(key);
+
+            return;
+        }
+
+
+        /*
+           Decimal
+        */
+
+        if (key === ".") {
+
+            inputDecimal();
+
+            return;
+        }
+
+
+        /*
+           Operators
+        */
+
+        switch (key) {
+
+            case "+":
+
+                inputOperator("+");
+
+                break;
+
+
+            case "-":
+
+                inputOperator("-");
+
+                break;
+
+
+            case "*":
+
+                inputOperator("×");
+
+                break;
+
+
+            case "/":
+
+                event.preventDefault();
+
+                inputOperator("÷");
+
+                break;
+
+
+            case "%":
+
+                applyPercent();
+
+                break;
+
+
+            case "Enter":
+
+            case "=":
+
+                calculateResult();
+
+                break;
+
+
+            case "Backspace":
+
+                backspace();
+
+                break;
+
+
+            case "Escape":
+
+                clearAll();
+
+                break;
+        }
+    }
+);
+
+
+/* =========================================================
+   18. INITIAL DISPLAY
+   ========================================================= */
+
 updateDisplay();
