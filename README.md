@@ -141,10 +141,6 @@ The layout automatically adapts to different screen sizes.
 
 ![Calculator History](screenshots/calculator-history.png)
 
-### Project Preview
-
-![Student Calculator Preview](calculator-preview.png)
-
 ## 🚀 How to Run
 
 ### Directly
